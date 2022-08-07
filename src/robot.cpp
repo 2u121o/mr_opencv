@@ -1,20 +1,17 @@
 #include "robot.h"
 
 
-Robot::Robot(Eigen::Vector2i initial_pose, cv::Mat &map, int robot_size): pose_(initial_pose), map_(map), robot_size_(robot_size)
+Robot::Robot(cv::Point initial_pose, cv::Mat &map, int robot_size): robot_pose_(initial_pose), map_(map), robot_size_(robot_size)
 {
     std::cout << "[Robot] robot initialized" << std::endl;
 
-    nearest_point_.x = -1;
-    nearest_point_.y = -1;
-
 }
 
-void Robot::drawRobot(short int chanel_color){
+void Robot::drawRobot(cv::Mat &map, short int chanel_color){
 
     for(int x_idx=-robot_size_; x_idx<robot_size_+1; x_idx++){
         for(int y_idx=-robot_size_; y_idx<robot_size_+1; y_idx++){
-            cv::Vec3b &color = map_.at<cv::Vec3b>(pose_[1]-y_idx, pose_[0]-x_idx);
+            cv::Vec3b &color = map.at<cv::Vec3b>(robot_pose_.y-y_idx, robot_pose_.x-x_idx);
             color[0] = chanel_color;
             color[1] = chanel_color;
             color[2] = chanel_color;
@@ -24,95 +21,89 @@ void Robot::drawRobot(short int chanel_color){
    
 }
 
-void Robot::drawSensorLine(cv::Point point, cv::Point prev_point,  cv::Point prev_pose){
+
+cv::Point Robot::getSensedPoint(int direction, int radius){
+
+    cv::Point sensed_point(-1, -1);
+    double min_distance = 10000;
 
     
-    if(point.x != -1){
-
-        cv::Scalar line_color_prev(255, 255, 255);
-         int thickness = 1;
-        line(map_, prev_pose, prev_point, line_color_prev, thickness);
-
-        cv::Point current_pose(pose_[0], pose_[1]);
-        cv::Scalar line_color(0, 255, 0);
-        line(map_, current_pose, point, line_color, thickness);
-    }
-
-}
-
-cv::Point Robot::getSensedPoint(int direction){
-
-
-    if(direction == 83){
-        for(int y_px=0; y_px<50; y_px++){
-            for(int x_px=robot_size_+3; x_px<50; x_px++){ //start in robot_size_+3 to not recognize the robot itself
-                cv::Vec3b color = map_.at<cv::Vec3b>(pose_[1]+y_px, pose_[0]+x_px);
-                if(color[0]+color[1]+color[2] == 0){
-                    cv::Point sensed_point(pose_[0]+x_px, pose_[1]+y_px);
-                    return sensed_point;
+    //with this first if it avoid core dump in case the robot reach the upper
+    //part of the window, in this way the radius is adapted
+    int radius_y = robot_pose_.y<=radius ? robot_pose_.y:radius;
+    
+    for(int y=-radius_y; y<radius; y++){
+        for(int x=-radius; x<radius; x++){
+            cv::Vec3b pixel_color = map_.at<cv::Vec3b>(robot_pose_.y+y, robot_pose_.x+x);
+            if(pixel_color[0]+pixel_color[1]+pixel_color[2] == 0){
+                double tmp_distance = std::sqrt(std::pow(x,2)+std::pow(y,2));
+                if(min_distance>tmp_distance){
+                    sensed_point.x = robot_pose_.x+x;
+                    sensed_point.y = robot_pose_.y+y;
+                    min_distance = tmp_distance;
                 }
             }
         }
     }
-    cv::Point sensed_point(-1, -1);
+
     return sensed_point;
 }
 
 
 void Robot::move(int k){
 
-    drawRobot(255);
+    //drawRobot(255);
 
-    Eigen::Vector2i tmp_pose = pose_;
+    cv::Point tmp_pose = robot_pose_;
     switch (k)
         {
         case 81: //left
+             tmp_pose.x -=1;
             if(!is_collided(tmp_pose, k))
-                 pose_[0] -= 1;
+                 robot_pose_.x -= 1;
             break;
         case 82: //up
+            tmp_pose.y -=1;
             if(!is_collided(tmp_pose, k))
-                pose_[1] -= 1;
+                robot_pose_.y -= 1;
             break;
         case 83: //right
-            tmp_pose[0] +=1;
+            tmp_pose.x +=1;
             if(!is_collided(tmp_pose, k))
-                pose_[0] += 1;
+                robot_pose_.x += 1;
             break;
         case 84: //down
+            tmp_pose.y +=1;
             if(!is_collided(tmp_pose, k))
-                 pose_[1] += 1;
+                 robot_pose_.y += 1;
             break;
         default:
             break;
         }
-        drawRobot(0);
-        // cv::Point pev_nearest_point = nearest_point_;
-        // nearest_point_ = getSensedPoint(k);
-        // cv::Point prev_pose(tmp_pose[0],tmp_pose[1]);
-        // drawSensorLine(nearest_point_, pev_nearest_point,  prev_pose);
+        //drawRobot(0);
+      
         
 }
 
-bool Robot::is_collided(const Eigen::Vector2i next_pose, const int direction){
+bool Robot::is_collided(const cv::Point next_pose, const int direction){
 
     if(direction == 81){
-        cv::Vec3b color = map_.at<cv::Vec3b>(next_pose[1], next_pose[0]-robot_size_-2);
+        cv::Vec3b color = map_.at<cv::Vec3b>(next_pose.y, next_pose.x-robot_size_-1);
         if(color[0]+color[1]+color[2] == 0)
             return true;
     }
     else if(direction == 82){
-        cv::Vec3b color = map_.at<cv::Vec3b>(next_pose[1]-robot_size_-2, next_pose[0]);
+        cv::Vec3b color = map_.at<cv::Vec3b>(next_pose.y-robot_size_-1, next_pose.x);
         if(color[0]+color[1]+color[2] == 0)
             return true;
     }
     else if(direction == 83){
-        cv::Vec3b color = map_.at<cv::Vec3b>(next_pose[1], next_pose[0]+robot_size_+1);
+        cv::Vec3b color = map_.at<cv::Vec3b>(next_pose.y, next_pose.x+robot_size_+1);
         if(color[0]+color[1]+color[2] == 0)
             return true;
     }
     else if(direction == 84){
-         cv::Vec3b color = map_.at<cv::Vec3b>(next_pose[1]+robot_size_+2, next_pose[0]);
+         cv::Vec3b color = map_.at<cv::Vec3b>(next_pose.y+robot_size_+1, next_pose.x);
         if(color[0]+color[1]+color[2] == 0)
             return true;
     }
@@ -123,12 +114,12 @@ bool Robot::is_collided(const Eigen::Vector2i next_pose, const int direction){
 
     
 
-void Robot::setPose(Eigen::Vector2i pose){
-    pose_ = pose;
+void Robot::setPose(cv::Point pose){
+    robot_pose_ = pose;
 }
  
-Eigen::Vector2i Robot::getPose(){
-    return pose_;
+cv::Point Robot::getPose(){
+    return robot_pose_;
 }
 
 Robot::~Robot()

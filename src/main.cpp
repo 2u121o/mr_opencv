@@ -14,22 +14,42 @@ int main(){
     int x_max = map.cols;
     int y_max = map.rows;
 
-    Eigen::Vector2i initial_pose;
-    int x = rand();
-    initial_pose[0] = x%x_max; //to generate a number between 0 and x_max
-    int y = rand();
-    initial_pose[1] = y%y_max; //to generate a number between 0 and x_max
+    const int thickness = 1;
+
+    cv::Point initial_pose;
+    int x = 50;
+    initial_pose.x = x%x_max; //to generate a number between 0 and x_max
+    int y = 51;
+    initial_pose.y = y%y_max; //to generate a number between 0 and x_max
 
     Robot robot(initial_pose, map, 3);
-
+    int k = 0;
     while(1){
-
-        cv::imshow("Map", map);
-        int k = cv::waitKey(0);
+        map = cv::imread("/home/dario/Workspace/particle_filter/map1.png");
+        
+        
 
         if(k==27 || k==-1) return 0; //pessed esc or x of the window
-        robot.move(k);
+        if(k!=0){
+            robot.move(k);
+            robot.drawRobot(map, 60);
+            cv::Point current_pose = robot.getPose();
 
+            int radius = 50;
+            cv::Scalar circle_color(0, 0, 255);
+            cv::circle(map, current_pose,radius, circle_color, thickness);
+
+            cv::Point meas_point =  robot.getSensedPoint(k, radius);
+
+            if(meas_point.x != -1){
+                cv::Scalar line_color(255, 0, 0);
+                line(map, current_pose, meas_point, line_color, thickness, cv::LINE_8);
+            }
+        }
+
+        cv::imshow("Map", map);
+        k = cv::waitKey(0);
+        
     }
 
     

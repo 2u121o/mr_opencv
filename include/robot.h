@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
 
 #include <Eigen/Dense>
 
@@ -15,34 +16,26 @@ public:
 
     
 
-    Robot(Eigen::Vector2i initial_pose, cv::Mat &map, int robot_size);
+    Robot(cv::Point initial_pose, cv::Mat &map, int robot_size);
     ~Robot();
 
 
-    void setPose(Eigen::Vector2i pose);
-    Eigen::Vector2i getPose();
+    void setPose(cv::Point pose);
+    cv::Point getPose();
 
     void move(int k);
-    
+    void drawRobot(cv::Mat &map, short int chanel_color);
+    cv::Point getSensedPoint(int direction, int radius);
 
 private:
 
     int robot_size_;
-    Eigen::Vector2i pose_;
 
-    cv::Point nearest_point_;
-
+    cv::Point robot_pose_;
     cv::Mat map_;
-    cv::Mat initial_map_;
-
-
-
-    void drawRobot(short int chanel_color);
-    void drawSensorLine(cv::Point point, cv::Point prev_point,  cv::Point prev_pose);
     
-    cv::Point getSensedPoint(int k);
 
-    bool is_collided(const Eigen::Vector2i next_pose, const int direction);
+    bool is_collided(const cv::Point next_pose, const int direction);
 };
 
 
