@@ -8,6 +8,7 @@
 
 #include "opencv2/opencv.hpp"
 
+
 class Robot
 {
 public:
@@ -28,11 +29,19 @@ private:
 
     int robot_size_;
     Eigen::Vector2i pose_;
-    cv::Mat map_;
 
-    
+    cv::Point nearest_point_;
+
+    cv::Mat map_;
+    cv::Mat initial_map_;
+
+
 
     void drawRobot(short int chanel_color);
+    void drawSensorLine(cv::Point point, cv::Point prev_point,  cv::Point prev_pose);
+    
+    cv::Point getSensedPoint(int k);
+
     bool is_collided(const Eigen::Vector2i next_pose, const int direction);
 };
 
