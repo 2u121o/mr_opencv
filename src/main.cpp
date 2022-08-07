@@ -6,6 +6,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "robot.h"
+#include "filter.h"
 
 int main(){
     std::cout << "Particle Filter Example" << std::endl;
@@ -13,6 +14,7 @@ int main(){
     cv::Mat map = cv::imread("/home/dario/Workspace/particle_filter/map1.png");
     int x_max = map.cols;
     int y_max = map.rows;
+    
 
     const int thickness = 1;
 
@@ -22,8 +24,15 @@ int main(){
     int y = 51;
     initial_pose.y = y%y_max; //to generate a number between 0 and x_max
 
-    Robot robot(initial_pose, map, 3);
+    Robot robot( map, initial_pose, 3);
     int k = 0;
+
+
+    Filter filter(map);
+    filter.initializeParticles(10000);
+    
+
+    double range;  //measurement range
     while(1){
         map = cv::imread("/home/dario/Workspace/particle_filter/map1.png");
         
@@ -39,13 +48,22 @@ int main(){
             cv::Scalar circle_color(0, 0, 255);
             cv::circle(map, current_pose,radius, circle_color, thickness);
 
-            cv::Point meas_point =  robot.getSensedPoint(k, radius);
+            //this point is in the global RF
+            cv::Point meas_point =  robot.getSensedPoint(radius, range);
 
             if(meas_point.x != -1){
                 cv::Scalar line_color(255, 0, 0);
                 line(map, current_pose, meas_point, line_color, thickness, cv::LINE_8);
+                std::cout << "[Main] Range: " << range << std::endl;
+                
+                //std::cout << "Meas Point" << meas_point - current_pose << std::endl;
+
+                double bearing = robot.getBearing(meas_point);
+                std::cout << "[Main] Bearing: " << bearing << std::endl;
             }
         }
+        
+        filter.drawParticles(map);
 
         cv::imshow("Map", map);
         k = cv::waitKey(0);

@@ -1,7 +1,7 @@
 #include "robot.h"
 
 
-Robot::Robot(cv::Point initial_pose, cv::Mat &map, int robot_size): robot_pose_(initial_pose), map_(map), robot_size_(robot_size)
+Robot::Robot( cv::Mat &map, cv::Point initial_pose, int robot_size): robot_pose_(initial_pose), map_(map), robot_size_(robot_size)
 {
     std::cout << "[Robot] robot initialized" << std::endl;
 
@@ -22,7 +22,7 @@ void Robot::drawRobot(cv::Mat &map, short int chanel_color){
 }
 
 
-cv::Point Robot::getSensedPoint(int direction, int radius){
+cv::Point Robot::getSensedPoint(int radius, double &range){
 
     cv::Point sensed_point(-1, -1);
     double min_distance = 10000;
@@ -45,8 +45,16 @@ cv::Point Robot::getSensedPoint(int direction, int radius){
             }
         }
     }
-
+    range = min_distance;
     return sensed_point;
+}
+
+double Robot::getBearing(cv::Point nearest_point){
+
+    //nearest point in the robot RF
+    cv::Point nearest_point_in_robot = nearest_point - robot_pose_;
+    return std::atan2(nearest_point_in_robot.y, nearest_point_in_robot.x);
+
 }
 
 

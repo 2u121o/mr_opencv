@@ -16,7 +16,7 @@ public:
 
     
 
-    Robot(cv::Point initial_pose, cv::Mat &map, int robot_size);
+    Robot( cv::Mat &map, cv::Point initial_pose, int robot_size);
     ~Robot();
 
 
@@ -25,7 +25,8 @@ public:
 
     void move(int k);
     void drawRobot(cv::Mat &map, short int chanel_color);
-    cv::Point getSensedPoint(int direction, int radius);
+    cv::Point getSensedPoint(int radius, double &range);
+    double getBearing(cv::Point nearest_point);
 
 private:
 
