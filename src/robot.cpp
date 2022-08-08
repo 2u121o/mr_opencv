@@ -31,6 +31,9 @@ cv::Point Robot::getSensedPoint(int radius, double &range){
     //with this first if it avoid core dump in case the robot reach the upper
     //part of the window, in this way the radius is adapted
     int radius_y = robot_pose_.y<=radius ? robot_pose_.y:radius;
+
+    std::cout << "robot_pose_.y: " << robot_pose_.y << std::endl;
+    std::cout << "robot_pose_.x: " << robot_pose_.x << std::endl;
     
     for(int y=-radius_y; y<radius; y++){
         for(int x=-radius; x<radius; x++){

@@ -29,14 +29,16 @@ int main(){
 
 
     Filter filter(map);
-    filter.initializeParticles(10000);
+    filter.initializeParticles(1);
     
 
     double range;  //measurement range
+    std::vector<double> weights;
     while(1){
         map = cv::imread("/home/dario/Workspace/particle_filter/map1.png");
         
-        
+        int u_x = 0;
+        int u_y = 0;
 
         if(k==27 || k==-1) return 0; //pessed esc or x of the window
         if(k!=0){
@@ -51,6 +53,9 @@ int main(){
             //this point is in the global RF
             cv::Point meas_point =  robot.getSensedPoint(radius, range);
 
+           filter.prediction(k); 
+           
+
             if(meas_point.x != -1){
                 cv::Scalar line_color(255, 0, 0);
                 line(map, current_pose, meas_point, line_color, thickness, cv::LINE_8);
@@ -60,7 +65,12 @@ int main(){
 
                 double bearing = robot.getBearing(meas_point);
                 std::cout << "[Main] Bearing: " << bearing << std::endl;
+
+                //update the filter just if i have a measure
+                filter.update(range, bearing, weights);
             }
+
+           
         }
         
         filter.drawParticles(map);

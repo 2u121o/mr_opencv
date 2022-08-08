@@ -68,6 +68,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "core": "cpp"
-    }
+        "core": "cpp",
+        "*.ipp": "cpp"
+    },
+    "cmake.configureOnOpen": true
 }
