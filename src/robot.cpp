@@ -31,12 +31,10 @@ cv::Point Robot::getSensedPoint(int radius, double &range){
     //with this first if it avoid core dump in case the robot reach the upper
     //part of the window, in this way the radius is adapted
     int radius_y = robot_pose_.y<=radius ? robot_pose_.y:radius;
+    int radius_x = robot_pose_.x<=radius ? robot_pose_.x:radius;
 
-    std::cout << "robot_pose_.y: " << robot_pose_.y << std::endl;
-    std::cout << "robot_pose_.x: " << robot_pose_.x << std::endl;
-    
     for(int y=-radius_y; y<radius; y++){
-        for(int x=-radius; x<radius; x++){
+        for(int x=-radius_x; x<radius; x++){
             cv::Vec3b pixel_color = map_.at<cv::Vec3b>(robot_pose_.y+y, robot_pose_.x+x);
             if(pixel_color[0]+pixel_color[1]+pixel_color[2] == 0){
                 double tmp_distance = std::sqrt(std::pow(x,2)+std::pow(y,2));

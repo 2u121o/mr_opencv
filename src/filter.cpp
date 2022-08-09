@@ -4,12 +4,15 @@ Filter::Filter(cv::Mat &map): map_(map){
 
     std::cout << "[Filter] Filter initialized" << std::endl;
 
+    sum_weights_ = 0;
+
 }
 
 void Filter::initializeParticles(int num_particles){
 
     num_particles_ = num_particles;
     particles_.resize(num_particles_);
+    weights_.resize(num_particles_);
 
     int x_max = map_.cols;
     int y_max = map_.rows;
@@ -101,25 +104,32 @@ bool Filter::is_collided(const cv::Point next_pose, int direction){
 
 }
 
-void Filter::update(double range, double bearing, std::vector<double> weights){
+void Filter::update(double range, double bearing){
 
     Eigen::Vector2d z;
     z << range, bearing;
 
-    weights.resize(num_particles_);
     for(int i=0; i<num_particles_; i++){
 
         double range_part;
         cv::Point particle = particles_.at(i);
         cv::Point nearest_point = getRange(particle, 30, range_part);
-        //int bearing_part = getBearing(nearest_point, particle);
+        int bearing_part = getBearing(nearest_point, particle);
 
-        // Eigen::Vector2d h;
-        // h << range_part, bearing_part;
+        Eigen::Vector2d h;
+        h << range_part, bearing_part;
 
-        // double w = (h-z).transpose()*(h-z);
-        // weights[i] = w;
+        Eigen::Matrix2d sigma;
+        sigma  << 100, 0,
+                  0,  100;
+
+        double w = (h-z).transpose()*(h-z);
+        weights_[i] = std::exp(-0.5*w);
+        
+        sum_weights_+=w;
     }
+
+    uniformSampling();
 
 }
 
@@ -132,9 +142,10 @@ void Filter::update(double range, double bearing, std::vector<double> weights){
     //with this first if it avoid core dump in case the robot reach the upper
     //part of the window, in this way the radius is adapted
     int radius_y = particle.y<=radius ? particle.y:radius;
+    int radius_x = particle.x<=radius ? particle.x:radius;
     
     for(int y=-radius_y; y<radius; y++){
-        for(int x=-radius; x<radius; x++){
+        for(int x=-radius_x; x<radius; x++){
             cv::Vec3b pixel_color = map_.at<cv::Vec3b>(particle.y+y, particle.x+x);
             if(pixel_color[0]+pixel_color[1]+pixel_color[2] == 0){
                 double tmp_distance = std::sqrt(std::pow(x,2)+std::pow(y,2));
@@ -158,13 +169,61 @@ double Filter::getBearing(cv::Point nearest_point, cv::Point particle){
 
 }
 
+void Filter::uniformSampling(){
+    
+    std::vector<double> tmp_weights;
+    tmp_weights.resize(num_particles_);
+
+    std::vector<cv::Point> tmp_particles;
+    tmp_particles.resize(num_particles_);
+
+    std::vector<double> cum_distribution;
+    cum_distribution.resize(num_particles_);
+
+    for(int i=0; i<num_particles_; i++){
+        if(i==0){
+            cum_distribution[0] = weights_[0]/sum_weights_;
+            //std::cout << weights_[0]/sum_weights_  << std::endl;
+        }
+        else{
+            cum_distribution[i] = cum_distribution[i-1] + weights_[i]/sum_weights_;
+            //std::cout << cum_distribution[i-1] + weights_[i]/sum_weights_  << std::endl;
+        }
+    }
+    cum_distribution[num_particles_-1] = 1.0;
+
+    
+    double diff = (double)1/num_particles_;
+    double y =  (((double) rand() / RAND_MAX) * diff);
+    
+    for(int i=0; i<num_particles_; i++){  
+        int j=0;
+        bool is_found = false;
+        while(!is_found){
+            if((y<cum_distribution[j] && j==0) || (j!=0 && y<cum_distribution[j] && y>cum_distribution[j-1])){
+                tmp_weights[i] = weights_[j];
+                tmp_particles[i] = particles_[j];
+                std::cout << particles_[j].x << "---" << particles_[j].y << std::endl;
+                y += (double)1/num_particles_;
+                is_found = true;
+            }
+            j++;
+            
+        }
+    }
+
+    particles_ = tmp_particles;
+    weights_ = tmp_weights;
+
+}
+
 void Filter::drawParticles(cv::Mat &map){
 
     for(int i=0; i<num_particles_; i++){
         cv::Point particle = particles_.at(i);
-        for(int x_idx=-4; x_idx<4; x_idx++){
-                for(int y_idx=-4; y_idx<4; y_idx++){ 
-                    cv::Vec3b &color = map.at<cv::Vec3b>(particle.y, particle.x);
+        for(int x_idx=-1; x_idx<1; x_idx++){
+                for(int y_idx=-1; y_idx<1; y_idx++){ 
+                    cv::Vec3b &color = map.at<cv::Vec3b>(particle.y-y_idx, particle.x-x_idx);
                     color[0] = 255;
                     color[1] = 0;
                     color[2] = 0;

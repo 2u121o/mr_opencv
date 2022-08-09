@@ -29,11 +29,10 @@ int main(){
 
 
     Filter filter(map);
-    filter.initializeParticles(1);
+    filter.initializeParticles(250);
     
 
     double range;  //measurement range
-    std::vector<double> weights;
     while(1){
         map = cv::imread("/home/dario/Workspace/particle_filter/map1.png");
         
@@ -59,15 +58,15 @@ int main(){
             if(meas_point.x != -1){
                 cv::Scalar line_color(255, 0, 0);
                 line(map, current_pose, meas_point, line_color, thickness, cv::LINE_8);
-                std::cout << "[Main] Range: " << range << std::endl;
+               // std::cout << "[Main] Range: " << range << std::endl;
                 
                 //std::cout << "Meas Point" << meas_point - current_pose << std::endl;
 
                 double bearing = robot.getBearing(meas_point);
-                std::cout << "[Main] Bearing: " << bearing << std::endl;
+                //std::cout << "[Main] Bearing: " << bearing << std::endl;
 
                 //update the filter just if i have a measure
-                filter.update(range, bearing, weights);
+                filter.update(range, bearing);
             }
 
            
