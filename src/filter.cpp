@@ -120,13 +120,19 @@ void Filter::update(double range, double bearing){
         h << range_part, bearing_part;
 
         Eigen::Matrix2d sigma;
-        sigma  << 100, 0,
-                  0,  100;
+        sigma  << 0.001, 0,
+                  0,  0.001;
+        if(h(1) != 10000){
+            double w = (h-z).transpose()*sigma*(h-z);
+            weights_[i] = std::exp(-0.5*w);
+            sum_weights_+=w;
+            //std::cout << "w " << w << z <<std::endl ;
+        }
 
-        double w = (h-z).transpose()*(h-z);
-        weights_[i] = std::exp(-0.5*w);
         
-        sum_weights_+=w;
+        
+        
+        
     }
 
     uniformSampling();
@@ -138,7 +144,7 @@ void Filter::update(double range, double bearing){
     cv::Point nearest_point(-10000, -10000);
     double min_distance = 10000;
 
-    
+    radius = 60;
     //with this first if it avoid core dump in case the robot reach the upper
     //part of the window, in this way the radius is adapted
     int radius_y = particle.y<=radius ? particle.y:radius;
@@ -203,7 +209,6 @@ void Filter::uniformSampling(){
             if((y<cum_distribution[j] && j==0) || (j!=0 && y<cum_distribution[j] && y>cum_distribution[j-1])){
                 tmp_weights[i] = weights_[j];
                 tmp_particles[i] = particles_[j];
-                std::cout << particles_[j].x << "---" << particles_[j].y << std::endl;
                 y += (double)1/num_particles_;
                 is_found = true;
             }

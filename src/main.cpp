@@ -28,8 +28,8 @@ int main(){
     int k = 0;
 
 
-    Filter filter(map);
-    filter.initializeParticles(250);
+    // Filter filter(map);
+    // filter.initializeParticles(150);
     
 
     double range;  //measurement range
@@ -52,7 +52,7 @@ int main(){
             //this point is in the global RF
             cv::Point meas_point =  robot.getSensedPoint(radius, range);
 
-           filter.prediction(k); 
+        //    filter.prediction(k); 
            
 
             if(meas_point.x != -1){
@@ -66,13 +66,13 @@ int main(){
                 //std::cout << "[Main] Bearing: " << bearing << std::endl;
 
                 //update the filter just if i have a measure
-                filter.update(range, bearing);
+                // filter.update(range, bearing);
             }
 
            
         }
-        
-        filter.drawParticles(map);
+        //std::cout << robot.getPose().x << "---" << robot.getPose().y << std::endl;
+        // filter.drawParticles(map);
 
         cv::imshow("Map", map);
         k = cv::waitKey(0);
